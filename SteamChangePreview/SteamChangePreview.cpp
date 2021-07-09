@@ -3,20 +3,20 @@
 
 int main(int argc, char* argv[])
 {
-	if (argc == 1) {
-		return enterAll();
-	} else if (argc == 2) {
-		return enterIds(argv[1]);
-	}
-
 	InputParser input(argc, argv);
 	if (input.cmdOptionExists("-h") || input.cmdOptionExists("--help") || input.cmdOptionExists("/?")) {
-		printf("Usage: SteamChangePreview.exe IMAGE_PATH PUBLISHEDFILEID [APPID]\n\n");
+		printf("Usage: %s IMAGE_PATH PUBLISHEDFILEID [APPID]\n\n", argv[0]);
 
 		printf("Run with -h or --help to show this usage\n");
 		printf("It is possible to drag and drop an image onto the executable.\n");
 		printf("Fields that are not filled in will be taken from stdin.\n");
 		return 0;
+	}
+
+	if (argc == 1) {
+		return enterAll();
+	} else if (argc == 2) {
+		return enterIds(argv[1]);
 	}
 }
 
