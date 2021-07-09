@@ -47,8 +47,8 @@ uint64 getInt(const char* message, bool required) {
 }
 
 int enterIds(const char* file) {
-	uint64 publishedfileid = getInt("Enter the publishedfileid: ", true);
-	int appid = (int) getInt("Enter the appid: ", false);
+	PublishedFileId_t publishedfileid = getInt("Enter the publishedfileid: ", true);
+	AppId_t appid = (AppId_t) getInt("Enter the appid: ", false);
 
 	if (appid == 0) {
 		printf("Looking for the correct appid online...\n");
@@ -65,7 +65,7 @@ int enterIds(const char* file) {
 	return changePreview(appid, publishedfileid, file);
 }
 
-int getAppid(uint64 publishedfileid) {
+AppId_t getAppid(PublishedFileId_t publishedfileid) {
 	// This sucks
 	std::wstring str(L"powershell -c \"[regex]::Matches((Invoke-WebRequest -Uri \\\"https://steamcommunity.com/sharedfiles/filedetails/?id=");
 	str += std::to_wstring(publishedfileid);
@@ -76,11 +76,11 @@ int getAppid(uint64 publishedfileid) {
 	auto out = ExecCmd(str.c_str());
 	//printf("out=%s\n", out);
 
-	return strtol(out, NULL, 10);
+	return strtoul(out, NULL, 10);
 }
 
-int changePreview(int appid, uint64 publishedfileid, const char* file) {
-	printf("appid=%d\n", appid);
+int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file) {
+	printf("appid=%lu\n", appid);
 	printf("publishedfileid=%llu\n", publishedfileid);
 	printf("file=%s\n", file);
 
@@ -94,7 +94,29 @@ int changePreview(int appid, uint64 publishedfileid, const char* file) {
 	if (!SteamAPI_Init())
 	{
 		printf("SteamAPI_Init() failed\n");
+		return 1;
 	}
+
+	printf("Starting item update\n");
+	UGCUpdateHandle_t hUpdate = SteamUGC()->StartItemUpdate(appid, publishedfileid);
+
+	printf("Setting item preview\n");
+	if (!SteamUGC()->SetItemPreview(hUpdate, file)) {
+		printf("SteamUGC()->SetItemPreview() failed\n");
+		return 1;
+	}
+
+	printf("Submitting update\n");
+	SteamAPICall_t hSteamAPICall = SteamUGC()->SubmitItemUpdate(hUpdate, "Update preview image");
+	if (hSteamAPICall == k_UGCQueryHandleInvalid) {
+		printf("SteamUGC()->SubmitItemUpdate failed\n");
+		return 1;
+	}
+
+	// TODO: Callback https://partner.steamgames.com/doc/api/ISteamUGC#SubmitItemUpdateResult_t
+
+	printf("Shutting down SteamAPI\n");
+	SteamAPI_Shutdown();
 
 	return 0;
 }
