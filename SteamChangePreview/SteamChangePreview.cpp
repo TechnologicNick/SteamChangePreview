@@ -34,14 +34,14 @@ int enterAll() {
 	return enterIds(file);
 }
 
-long getInt(const char* message, bool required) {
+uint64 getInt(const char* message, bool required) {
 	char *p, s[100];
-	long n;
+	uint64 n;
 
 	printf(message);
 
 	while (fgets(s, sizeof(s), stdin)) {
-		n = strtol(s, &p, 10);
+		n = strtoull(s, &p, 10);
 		if ((required && p == s) || *p != '\n') {
 			printf("ERROR: Please enter an integer: ");
 		}
@@ -52,16 +52,42 @@ long getInt(const char* message, bool required) {
 }
 
 int enterIds(const char* file) {
-	int publishedfileid = getInt("Enter the publishedfileid: ", true);
+	uint64 publishedfileid = getInt("Enter the publishedfileid: ", true);
 	int appid = getInt("Enter the appid: ", false);
 
 	return changePreview(appid, publishedfileid, file);
 }
 
-int changePreview(int appid, int publishedfileid, const char* file) {
+int getAppid(uint64 publishedfileid) {
+	// This sucks
+	std::wstring str(L"powershell -c \"[regex]::Matches((Invoke-WebRequest -Uri \\\"https://steamcommunity.com/sharedfiles/filedetails/?id=");
+	str += std::to_wstring(publishedfileid);
+	str += std::wstring(L"\\\" ).Content, 'data-appid=\\\"(\\d+?)\\\">').Groups[1].Value\"");
+
+	wprintf(L"Executing: %s\n", str.c_str());
+	
+	auto out = ExecCmd(str.c_str());
+	printf("out=%s\n", out);
+
+	return strtol(out, NULL, 10);
+}
+
+int changePreview(int appid, uint64 publishedfileid, const char* file) {
 	printf("appid=%d\n", appid);
-	printf("publishedfileid=%d\n", publishedfileid);
+	printf("publishedfileid=%llu\n", publishedfileid);
 	printf("file=%s\n", file);
+
+	if (appid == 0) {
+		printf("Looking for the correct appid online...\n");
+
+		appid = getAppid(publishedfileid);
+		printf("Found appid=%d\n", appid);
+
+		if (appid == 0) {
+			std::cerr << "Failed getting appid of workshop item" << std::endl;
+			return 1;
+		}
+	}
 
 	return 0;
 }

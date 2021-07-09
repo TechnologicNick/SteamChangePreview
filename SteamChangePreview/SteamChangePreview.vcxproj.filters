@@ -24,6 +24,9 @@
     <ClInclude Include="SteamChangePreview.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ExecCmd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

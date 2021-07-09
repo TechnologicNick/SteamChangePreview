@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ExecCmd.h" />
     <ClInclude Include="InputParser.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SteamChangePreview.h" />
