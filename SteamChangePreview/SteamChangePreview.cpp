@@ -11,17 +11,12 @@ int main(int argc, char* argv[])
 
 	InputParser input(argc, argv);
 	if (input.cmdOptionExists("-h") || input.cmdOptionExists("--help") || input.cmdOptionExists("/?")) {
-		printf("Usage: SteamChangePreview.exe IMAGE_PATH [PUBLISHEDFILEID] [APPID]\n\n");
+		printf("Usage: SteamChangePreview.exe IMAGE_PATH PUBLISHEDFILEID [APPID]\n\n");
 
 		printf("Run with -h or --help to show this usage\n");
 		printf("It is possible to drag and drop an image onto the executable.\n");
 		printf("Fields that are not filled in will be taken from stdin.\n");
 		return 0;
-	}
-
-	if (!SteamAPI_Init())
-	{
-		printf("SteamAPI_Init() failed\n");
 	}
 }
 
@@ -53,29 +48,7 @@ uint64 getInt(const char* message, bool required) {
 
 int enterIds(const char* file) {
 	uint64 publishedfileid = getInt("Enter the publishedfileid: ", true);
-	int appid = getInt("Enter the appid: ", false);
-
-	return changePreview(appid, publishedfileid, file);
-}
-
-int getAppid(uint64 publishedfileid) {
-	// This sucks
-	std::wstring str(L"powershell -c \"[regex]::Matches((Invoke-WebRequest -Uri \\\"https://steamcommunity.com/sharedfiles/filedetails/?id=");
-	str += std::to_wstring(publishedfileid);
-	str += std::wstring(L"\\\" ).Content, 'data-appid=\\\"(\\d+?)\\\">').Groups[1].Value\"");
-
-	wprintf(L"Executing: %s\n", str.c_str());
-	
-	auto out = ExecCmd(str.c_str());
-	printf("out=%s\n", out);
-
-	return strtol(out, NULL, 10);
-}
-
-int changePreview(int appid, uint64 publishedfileid, const char* file) {
-	printf("appid=%d\n", appid);
-	printf("publishedfileid=%llu\n", publishedfileid);
-	printf("file=%s\n", file);
+	int appid = (int) getInt("Enter the appid: ", false);
 
 	if (appid == 0) {
 		printf("Looking for the correct appid online...\n");
@@ -87,6 +60,40 @@ int changePreview(int appid, uint64 publishedfileid, const char* file) {
 			std::cerr << "Failed getting appid of workshop item" << std::endl;
 			return 1;
 		}
+	}
+
+	return changePreview(appid, publishedfileid, file);
+}
+
+int getAppid(uint64 publishedfileid) {
+	// This sucks
+	std::wstring str(L"powershell -c \"[regex]::Matches((Invoke-WebRequest -Uri \\\"https://steamcommunity.com/sharedfiles/filedetails/?id=");
+	str += std::to_wstring(publishedfileid);
+	str += std::wstring(L"\\\" ).Content, 'data-appid=\\\"(\\d+?)\\\">').Groups[1].Value\"");
+
+	//wprintf(L"Executing: %s\n", str.c_str());
+	
+	auto out = ExecCmd(str.c_str());
+	//printf("out=%s\n", out);
+
+	return strtol(out, NULL, 10);
+}
+
+int changePreview(int appid, uint64 publishedfileid, const char* file) {
+	printf("appid=%d\n", appid);
+	printf("publishedfileid=%llu\n", publishedfileid);
+	printf("file=%s\n", file);
+
+	printf("Writing appid to steam_appid.txt\n");
+	std::ofstream myfile;
+	myfile.open("steam_appid.txt");
+	myfile << appid;
+	myfile.close();
+
+	printf("Initialising SteamAPI\n");
+	if (!SteamAPI_Init())
+	{
+		printf("SteamAPI_Init() failed\n");
 	}
 
 	return 0;
