@@ -72,7 +72,7 @@ AppId_t getAppid(PublishedFileId_t publishedfileid) {
 	str += std::wstring(L"\\\" ).Content, 'data-appid=\\\"(\\d+?)\\\">').Groups[1].Value\"");
 
 	//wprintf(L"Executing: %s\n", str.c_str());
-	
+
 	auto out = ExecCmd(str.c_str());
 	//printf("out=%s\n", out);
 
@@ -84,21 +84,61 @@ int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* 
 	printf("publishedfileid=%llu\n", publishedfileid);
 	printf("file=%s\n", file);
 
+	CPreviewChanger pc(appid);
+
+	if (!pc.Init()) {
+		return 1;
+	}
+
+	int result = pc.ChangePreview(publishedfileid, file);
+	if (result) {
+		pc.Shutdown();
+		return result;
+	}
+
+	pc.LoopRunCallbacks();
+
+	pc.Shutdown();
+
+	return 0;
+}
+
+
+
+CPreviewChanger::CPreviewChanger(AppId_t appid) {
+	this->m_appid = appid;
+
+	this->SetAppId(appid);
+}
+
+void CPreviewChanger::SetAppId(AppId_t appid) {
 	printf("Writing appid to steam_appid.txt\n");
 	std::ofstream myfile;
 	myfile.open("steam_appid.txt");
 	myfile << appid;
 	myfile.close();
+}
 
+bool CPreviewChanger::Init() {
 	printf("Initialising SteamAPI\n");
 	if (!SteamAPI_Init())
 	{
 		printf("SteamAPI_Init() failed\n");
-		return 1;
+		return false;
 	}
 
+	return true;
+}
+
+void CPreviewChanger::Shutdown() {
+	printf("Shutting down SteamAPI");
+	SteamAPI_Shutdown();
+}
+
+int CPreviewChanger::ChangePreview(PublishedFileId_t publishedfileid, const char* file) {
+
 	printf("Starting item update\n");
-	UGCUpdateHandle_t hUpdate = SteamUGC()->StartItemUpdate(appid, publishedfileid);
+	UGCUpdateHandle_t hUpdate = SteamUGC()->StartItemUpdate(this->m_appid, publishedfileid);
 
 	printf("Setting item preview\n");
 	if (!SteamUGC()->SetItemPreview(hUpdate, file)) {
@@ -113,11 +153,30 @@ int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* 
 		return 1;
 	}
 
-	// TODO: Callback https://partner.steamgames.com/doc/api/ISteamUGC#SubmitItemUpdateResult_t
+	m_SubmitItemUpdateCallResult.Set(hSteamAPICall, this, &CPreviewChanger::OnSubmitItemUpdate);
 
-	printf("Shutting down SteamAPI\n");
-	SteamAPI_Shutdown();
+	// TODO: Callback https://partner.steamgames.com/doc/api/ISteamUGC#SubmitItemUpdateResult_t
 
 	return 0;
 }
+
+void CPreviewChanger::LoopRunCallbacks() {
+	this->m_LoopRunning = true;
+
+	while (m_LoopRunning) {
+		SteamAPI_RunCallbacks();
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+}
+
+void CPreviewChanger::OnSubmitItemUpdate(SubmitItemUpdateResult_t *pCallback, bool bUserNeedsToAcceptWorkshopLegalAgreement) {
+	printf("OnSubmitItemUpdateResult\n");
+	printf("m_bUserNeedsToAcceptWorkshopLegalAgreement = %s\n", pCallback->m_bUserNeedsToAcceptWorkshopLegalAgreement ? "true" : "false");
+	printf("m_eResult = %d\n", pCallback->m_eResult);
+	printf("m_nPublishedFileId = %llu\n", pCallback->m_nPublishedFileId);
+
+	this->m_LoopRunning = false;
+}
+
 
