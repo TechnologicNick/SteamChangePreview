@@ -21,17 +21,33 @@ int main(int argc, char* argv[])
 	if (argc == 1) {
 		return enterAll();
 	} else if (argc == 2) {
-		return enterIds(argv[1]);
+		return onEnterFile(argv[1]);
 	}
 }
 
 int enterAll() {
-	char file[260];
+	char filename[MAX_PATH];
 
 	printf("Enter the path to your preview image: ");
-	fgets(file, sizeof(file), stdin);
+	fgets(filename, sizeof(filename), stdin);
 
-	return enterIds(file);
+	filename[strcspn(filename, "\n")] = 0;
+
+	return onEnterFile(filename);
+}
+
+int onEnterFile(const char* filename) {
+	char fullFilename[MAX_PATH];
+	GetFullPathNameA(filename, MAX_PATH, fullFilename, nullptr);
+
+	std::ifstream f(fullFilename);
+
+	if (f.fail()) {
+		std::cerr << "Failed reading \"" << fullFilename << "\": " << strerror(errno) << std::endl;
+		return errno;
+	}
+
+	return enterIds(fullFilename);
 }
 
 uint64 getInt(const char* message, bool required) {

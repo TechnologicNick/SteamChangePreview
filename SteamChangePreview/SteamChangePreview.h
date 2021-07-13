@@ -4,11 +4,13 @@
 #include <fstream>
 #include <string>
 #include <thread>
+#include <Windows.h>
 #include "InputParser.h"
 #include "ExecCmd.h"
 #include "EResult.h"
 
 int enterAll();
+int onEnterFile(const char* filename);
 int enterIds(const char* file);
 AppId_t getAppid(PublishedFileId_t publishedfileid);
 int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file, bool hidemessagebox);
