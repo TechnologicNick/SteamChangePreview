@@ -44,10 +44,20 @@ int main(int argc, char* argv[])
 		printf("Looking for the correct appid online...\n");
 		AppId_t appid = getAppid(publishedfileid);
 		
-		printf("Found appid=%d\n", appid);
 		if (appid == 0) {
 			std::cerr << "Failed getting appid of workshop item" << std::endl;
-			return 1;
+
+			std::ifstream fAppid("steam_appid.txt");
+			if (fAppid.is_open()) {
+				fAppid >> appid;
+				printf("Falling back to using previous appid = %d\n", appid);
+			}
+			else {
+				printf("No previous appid found to fall back to\n");
+				return 1;
+			}
+		} else {
+			printf("Found appid = %d\n", appid);
 		}
 
 		return changePreview(appid, publishedfileid, fullFilename, g_hidemessagebox);
@@ -122,11 +132,21 @@ int enterIds(const char* file) {
 		printf("Looking for the correct appid online...\n");
 
 		appid = getAppid(publishedfileid);
-		printf("Found appid=%d\n", appid);
 
 		if (appid == 0) {
 			std::cerr << "Failed getting appid of workshop item" << std::endl;
-			return 1;
+			
+			std::ifstream fAppid("steam_appid.txt");
+			if (fAppid.is_open()) {
+				fAppid >> appid;
+				printf("Falling back to using previous appid = %d\n", appid);
+			}
+			else {
+				printf("No previous appid found to fall back to\n");
+				return 1;
+			}
+		} else {
+			printf("Found appid = %d\n", appid);
 		}
 	}
 
