@@ -18,26 +18,73 @@ int main(int argc, char* argv[])
 
 	g_hidemessagebox = input.cmdOptionExists("--hidemessagebox");
 
-	if (argc == 1) {
+	int nonOptionCount = input.getNonOptionCount();
+
+	if (nonOptionCount == 0) {
 		return enterAll();
-	} else if (argc == 2) {
-		return onEnterFile(argv[1]);
+	} else if (nonOptionCount == 1) {
+		char fullFilename[MAX_PATH];
+
+		int result = processFile(input.getNthNonOption(0).c_str(), fullFilename);
+		if (result != 0) {
+			return result;
+		}
+
+		return enterIds(fullFilename);
+	} else if (nonOptionCount == 2) {
+		char fullFilename[MAX_PATH];
+
+		int result = processFile(input.getNthNonOption(0).c_str(), fullFilename);
+		if (result != 0) {
+			return result;
+		}
+
+		PublishedFileId_t publishedfileid = strtoull(input.getNthNonOption(1).c_str(), NULL, 10);
+		
+		printf("Looking for the correct appid online...\n");
+		AppId_t appid = getAppid(publishedfileid);
+		
+		printf("Found appid=%d\n", appid);
+		if (appid == 0) {
+			std::cerr << "Failed getting appid of workshop item" << std::endl;
+			return 1;
+		}
+
+		return changePreview(appid, publishedfileid, fullFilename, g_hidemessagebox);
+	} else if (nonOptionCount >= 3) {
+		char fullFilename[MAX_PATH];
+
+		int result = processFile(input.getNthNonOption(0).c_str(), fullFilename);
+		if (result != 0) {
+			return result;
+		}
+
+		PublishedFileId_t publishedfileid = strtoull(argv[2], NULL, 10);
+		AppId_t appid = (AppId_t) strtoull(argv[3], NULL, 10);
+
+		return changePreview(appid, publishedfileid, fullFilename, g_hidemessagebox);
 	}
 }
 
 int enterAll() {
 	char filename[MAX_PATH];
+	char fullFilename[MAX_PATH];
 
 	printf("Enter the path to your preview image: ");
 	fgets(filename, sizeof(filename), stdin);
 
 	filename[strcspn(filename, "\n")] = 0;
 
-	return onEnterFile(filename);
+	int result = processFile(filename, fullFilename);
+	if (result != 0) {
+		return result;
+	}
+
+	return enterIds(fullFilename);
 }
 
-int onEnterFile(const char* filename) {
-	char fullFilename[MAX_PATH];
+int processFile(const char* filename, LPSTR fullFilename) {
+	//char fullFilename[MAX_PATH];
 	GetFullPathNameA(filename, MAX_PATH, fullFilename, nullptr);
 
 	std::ifstream f(fullFilename);
@@ -47,7 +94,7 @@ int onEnterFile(const char* filename) {
 		return errno;
 	}
 
-	return enterIds(fullFilename);
+	return 0;
 }
 
 uint64 getInt(const char* message, bool required) {

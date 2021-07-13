@@ -24,6 +24,24 @@ public:
 		return std::find(this->tokens.begin(), this->tokens.end(), option)
 			!= this->tokens.end();
 	}
+
+	const std::string& getNthNonOption(int n) const {
+		int found = 0;
+		for (auto const& token: this->tokens)
+			if (strcmp(token.substr(0, 1).c_str(), "-") != 0)
+				if (n == found++)
+					return token;
+		static const std::string empty_string("");
+		return empty_string;
+	}
+
+	const int getNonOptionCount() const {
+		int found = 0;
+		for (auto const& token : this->tokens)
+			if (strcmp(token.substr(0, 1).c_str(), "-") != 0)
+				found++;
+		return found;
+	}
 private:
 	std::vector <std::string> tokens;
 };

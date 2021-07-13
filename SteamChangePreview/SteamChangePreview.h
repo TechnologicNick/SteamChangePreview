@@ -10,7 +10,7 @@
 #include "EResult.h"
 
 int enterAll();
-int onEnterFile(const char* filename);
+int processFile(const char* filename, LPSTR fullFilename);
 int enterIds(const char* file);
 AppId_t getAppid(PublishedFileId_t publishedfileid);
 int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file, bool hidemessagebox);
