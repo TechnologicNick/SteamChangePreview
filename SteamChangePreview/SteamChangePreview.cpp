@@ -168,9 +168,10 @@ AppId_t getAppid(PublishedFileId_t publishedfileid) {
 }
 
 int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file, bool hidemessagebox) {
-	printf("appid=%lu\n", appid);
-	printf("publishedfileid=%llu\n", publishedfileid);
-	printf("file=%s\n", file);
+	printf("Changing preview with data:\n");
+	printf("  appid = %lu\n", appid);
+	printf("  publishedfileid = %llu\n", publishedfileid);
+	printf("  file = %s\n", file);
 
 	CPreviewChanger pc(appid, hidemessagebox);
 
@@ -213,6 +214,7 @@ bool CPreviewChanger::Init() {
 	if (!SteamAPI_Init())
 	{
 		printf("SteamAPI_Init() failed\n");
+		printf("Make sure Steam is running, you're logged in and used the correct appid\n");
 		return false;
 	}
 
@@ -260,10 +262,10 @@ void CPreviewChanger::LoopRunCallbacks() {
 }
 
 void CPreviewChanger::OnSubmitItemUpdate(SubmitItemUpdateResult_t *pCallback, bool bUserNeedsToAcceptWorkshopLegalAgreement) {
-	printf("OnSubmitItemUpdateResult\n");
-	printf("m_bUserNeedsToAcceptWorkshopLegalAgreement = %s\n", pCallback->m_bUserNeedsToAcceptWorkshopLegalAgreement ? "true" : "false");
-	printf("m_eResult = %d\n", pCallback->m_eResult);
-	printf("m_nPublishedFileId = %llu\n", pCallback->m_nPublishedFileId);
+	printf("OnSubmitItemUpdate callback triggered:\n");
+	printf("  m_bUserNeedsToAcceptWorkshopLegalAgreement = %s\n", pCallback->m_bUserNeedsToAcceptWorkshopLegalAgreement ? "true" : "false");
+	printf("  m_eResult = %d\n", pCallback->m_eResult);
+	printf("  m_nPublishedFileId = %llu\n", pCallback->m_nPublishedFileId);
 
 	const char* caption = pCallback->m_eResult == k_EResultOK ? "Successfully updated preview image" : "Failed to update preview image";
 
@@ -300,7 +302,7 @@ void CPreviewChanger::OnSubmitItemUpdate(SubmitItemUpdateResult_t *pCallback, bo
 	conclusion += "  Description: " + std::string(GetEResultDescription(pCallback->m_eResult)) + std::string("\n");
 
 
-	printf("\n%s\n\n%s", caption, conclusion.c_str());
+	printf("\n\n%s\n\n%s", caption, conclusion.c_str());
 
 	if (!this->m_hidemessagebox) {
 		MessageBoxA(
