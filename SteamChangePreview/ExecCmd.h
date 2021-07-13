@@ -3,7 +3,13 @@
 #include <windows.h>
 #include <atlstr.h>
 
-// https://stackoverflow.com/a/35658917/12586927
+/**
+ * Author: TarmoPikaro
+ * URL: https://stackoverflow.com/a/35658917/12586927
+ * License: https://creativecommons.org/licenses/by-sa/4.0/
+ * No changes were made
+ */
+
 
 //
 // Execute a command and get the results. (Only standard output)
