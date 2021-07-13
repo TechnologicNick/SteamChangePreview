@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "SteamChangePreview.h"
 
+bool g_hidemessagebox = false;
+
 int main(int argc, char* argv[])
 {
 	InputParser input(argc, argv);
@@ -8,10 +10,13 @@ int main(int argc, char* argv[])
 		printf("Usage: %s IMAGE_PATH PUBLISHEDFILEID [APPID]\n\n", argv[0]);
 
 		printf("Run with -h or --help to show this usage\n");
+		printf("Run with --hidemessagebox to prevent the message box from being shown.\n");
 		printf("It is possible to drag and drop an image onto the executable.\n");
 		printf("Fields that are not filled in will be taken from stdin.\n");
 		return 0;
 	}
+
+	g_hidemessagebox = input.cmdOptionExists("--hidemessagebox");
 
 	if (argc == 1) {
 		return enterAll();
@@ -62,7 +67,7 @@ int enterIds(const char* file) {
 		}
 	}
 
-	return changePreview(appid, publishedfileid, file);
+	return changePreview(appid, publishedfileid, file, g_hidemessagebox);
 }
 
 AppId_t getAppid(PublishedFileId_t publishedfileid) {
@@ -79,12 +84,12 @@ AppId_t getAppid(PublishedFileId_t publishedfileid) {
 	return strtoul(out, NULL, 10);
 }
 
-int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file) {
+int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* file, bool hidemessagebox) {
 	printf("appid=%lu\n", appid);
 	printf("publishedfileid=%llu\n", publishedfileid);
 	printf("file=%s\n", file);
 
-	CPreviewChanger pc(appid);
+	CPreviewChanger pc(appid, hidemessagebox);
 
 	if (!pc.Init()) {
 		return 1;
@@ -105,8 +110,9 @@ int changePreview(AppId_t appid, PublishedFileId_t publishedfileid, const char* 
 
 
 
-CPreviewChanger::CPreviewChanger(AppId_t appid) {
+CPreviewChanger::CPreviewChanger(AppId_t appid, bool hidemessagebox) {
 	this->m_appid = appid;
+	this->m_hidemessagebox = hidemessagebox;
 
 	this->SetAppId(appid);
 }
@@ -175,6 +181,52 @@ void CPreviewChanger::OnSubmitItemUpdate(SubmitItemUpdateResult_t *pCallback, bo
 	printf("m_bUserNeedsToAcceptWorkshopLegalAgreement = %s\n", pCallback->m_bUserNeedsToAcceptWorkshopLegalAgreement ? "true" : "false");
 	printf("m_eResult = %d\n", pCallback->m_eResult);
 	printf("m_nPublishedFileId = %llu\n", pCallback->m_nPublishedFileId);
+
+	const char* caption = pCallback->m_eResult == k_EResultOK ? "Successfully updated preview image" : "Failed to update preview image";
+
+
+	std::string conclusion;
+
+	if (bUserNeedsToAcceptWorkshopLegalAgreement || pCallback->m_bUserNeedsToAcceptWorkshopLegalAgreement) {
+		conclusion += "You need to accept the Steam Workshop Legal agreement\n";
+		conclusion += "https://steamcommunity.com/sharedfiles/workshoplegalagreement\n\n";
+	}
+
+	// Add more information about errors
+	switch (pCallback->m_eResult) {
+	case k_EResultInvalidParam:
+		conclusion += "Either the provided app ID is invalid or doesn't match the consumer app ID of the item, ISteamUGC is not enabled for the provided app ID on the Steam Workshop Configuration App Admin page, or the preview file is smaller than 16 bytes.\n\n";
+		break;
+	case k_EResultAccessDenied:
+		conclusion += "You don't own a license for the provided app ID.\n\n";
+		break;
+	case k_EResultFileNotFound:
+		conclusion += "Failed to get the workshop info for the item or failed to read the preview file.\n\n";
+		break;
+	case k_EResultLockingFailed: 
+		conclusion += "Failed to aquire UGC Lock.\n\n";
+		break;
+	case k_EResultLimitExceeded:
+		conclusion += "The preview image is too large, it must be less than 1 Megabyte; or there is not enough space available on your Steam Cloud.\n\n";
+		break;
+	}
+
+	conclusion += "Result:\n";
+	conclusion += "  Code: " + std::to_string(pCallback->m_eResult) + std::string("\n");
+	conclusion += "  Name: " + std::string(GetEResultName(pCallback->m_eResult)) + std::string("\n");
+	conclusion += "  Description: " + std::string(GetEResultDescription(pCallback->m_eResult)) + std::string("\n");
+
+
+	printf("\n%s\n\n%s", caption, conclusion.c_str());
+
+	if (!this->m_hidemessagebox) {
+		MessageBoxA(
+			NULL,
+			conclusion.c_str(),
+			caption,
+			MB_OK | (pCallback->m_eResult != k_EResultOK ? MB_ICONERROR : 0)
+		);
+	}
 
 	this->m_LoopRunning = false;
 }

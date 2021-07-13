@@ -163,6 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="EResult.h" />
     <ClInclude Include="ExecCmd.h" />
     <ClInclude Include="InputParser.h" />
     <ClInclude Include="pch.h" />

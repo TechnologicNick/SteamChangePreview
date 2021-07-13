@@ -27,6 +27,9 @@
     <ClInclude Include="ExecCmd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
